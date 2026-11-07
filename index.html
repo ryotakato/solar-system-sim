@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Same Sky, Different Views</title>
+  <title>Solar System Sim</title>
   <meta name="description" content="Interactive visualisation of planetary motion seen from different reference frames.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2303060f'/%3E%3Ccircle cx='16' cy='16' r='11' fill='none' stroke='%234ea8ff' stroke-width='1.5'/%3E%3Ccircle cx='16' cy='16' r='4.5' fill='%23ffd166'/%3E%3Ccircle cx='27' cy='16' r='2.6' fill='%234ea8ff'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="style.css">
@@ -12,8 +12,7 @@
   <div id="app">
     <header id="topbar">
       <div class="brand">
-        <span class="brand-title">Same Sky, Different Views</span>
-        <span class="brand-sub">One set of planetary motions, seen from different places</span>
+        <span class="brand-title">Solar System Sim</span>
       </div>
 
       <div class="frame-block">
@@ -39,7 +38,7 @@
           Each planet rides a small circle (epicycle) whose centre moves around Earth on a larger circle (deferent).
           This simplified version (no eccentric or equant) reproduces the Earth-centred paths exactly.
         </div>
-        <div id="model-badge">Simplified model · circular, coplanar orbits · distances to scale, planet markers enlarged</div>
+        <div id="model-badge">Simplified model · circular, coplanar orbits (Pluto elliptical) · distances to scale, planet markers enlarged</div>
       </div>
 
       <aside id="panel" aria-label="Settings">
@@ -84,7 +83,9 @@
             <option value="mars">Mars</option>
             <option value="jupiter">Jupiter</option>
             <option value="saturn">Saturn</option>
-            <option value="all">All visible planets</option>
+            <option value="uranus">Uranus</option>
+            <option value="neptune">Neptune</option>
+            <option value="all">All visible planets (except Pluto)</option>
           </select>
           <p class="hint">Press E to toggle.</p>
         </section>
@@ -136,7 +137,7 @@
       <p>Earth is moving too. When Earth overtakes a slower outer planet such as Mars, the planet appears to slip backwards, just as a slower car seems to go backwards when you pass it. Add the planet's own motion and the path becomes a loop.</p>
 
       <h4>Why the Sun-centred paths look simpler</h4>
-      <p>Seen from the Sun, each path involves only one motion, the planet's own orbit, so in this model each path is a single circle. Seen from Earth, every path combines two motions: the planet's and Earth's.</p>
+      <p>Seen from the Sun, each path involves only one motion, the planet's own orbit, so in this model each path is a single circle (an ellipse for Pluto). Seen from Earth, every path combines two motions: the planet's and Earth's.</p>
 
       <h4>Epicycles: the historical description</h4>
       <p>Before the Sun-centred model, astronomers described these loops with circles on circles: the planet moves on a small circle (the <em>epicycle</em>) whose centre travels around Earth on a larger circle (the <em>deferent</em>). In this simplified model, one deferent plus one epicycle reproduces the Earth-centred paths exactly. They are the same motion, described in two ways. Historical models such as Ptolemy's added further refinements (eccentrics and equants) that are not shown here, and the true distances to the planets were not known at the time.</p>
@@ -145,7 +146,7 @@
       <p>Every reference frame is mathematically valid, so visual simplicity alone does not prove which cosmology is right. The case for the Sun-centred picture rests on a wider body of evidence, including telescope observations such as the full set of phases of Venus, Kepler's laws, Newton's theory of gravity, and measurements of stellar aberration and parallax.</p>
 
       <h4>Simplifications in this model</h4>
-      <p>Orbits are drawn as circles in a single plane, using realistic average radii and periods. Real orbits are ellipses, slightly tilted relative to each other, and planets move faster when nearer the Sun. Distances are to scale; planet markers are enlarged so they can be seen. Starting positions approximate those on 1 January 2000.</p>
+      <p>Orbits are drawn as circles in a single plane, using realistic average radii and periods. Real orbits are ellipses, slightly tilted relative to each other, and planets move faster when nearer the Sun. The exception is the dwarf planet Pluto, whose orbit is clearly elliptical (eccentricity about 0.25), so it is drawn as a Keplerian ellipse: it moves faster near the Sun and its path dips inside Neptune's. Its 17° tilt is not shown, and it is not given an epicycle overlay. Distances are to scale; planet markers are enlarged so they can be seen. Starting positions approximate those on 1 January 2000.</p>
 
       <h4>Keyboard shortcuts</h4>
       <dl class="keys">

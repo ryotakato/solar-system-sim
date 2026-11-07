@@ -1,4 +1,4 @@
-# Same Sky, Different Views
+# Solar System Sim
 
 An interactive visualisation of planetary motion seen from different reference frames.
 
@@ -54,20 +54,22 @@ Tips:
 - **10×** (10 simulated days per second) is a good live speed. Mars completes one retrograde cycle in about 78 seconds.
 - Use **50×** or **100×** to show long-term patterns quickly.
 - To show Jupiter and Saturn, open Settings and choose the **Outer** or **All** preset. A 30-year trail shows Saturn's full orbit.
+- Uranus, Neptune and Pluto are off by default. Choose the **Far** or **All** preset, then use a 100- or 250-year trail and **500×** or **1000×** speed (Pluto takes about 90 seconds per orbit at 1000×).
+- Changing the preset or the epicycle overlay keeps the current zoom. Press **F** (Fit) or Reset to reframe.
 
 ## Controls
 
 | Control | Function |
 |---|---|
-| View from (top bar) | Choose the reference frame (Sun, Mercury, Venus, Earth, Mars, Jupiter, Saturn) |
+| View from (top bar) | Choose the reference frame (Sun, Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, Neptune, Pluto) |
 | Compare | Earth-centred (left) and Sun-centred (right), same time, separate cameras |
 | ▶ / ⏸, step, reset | Playback. Each step is 10 days (1 day with Shift + arrow key) |
 | Timeline | Scrub simulation time |
-| Speed | 1×, 2×, 4×, 10×, 50×, 100×. **1× = 1 simulated day per real second** |
-| Settings → Trails | Show/hide trails, full trajectories, fading, trail length (1, 2, 5, 10, 30 Earth years) |
-| Settings → Bodies | Inner / Outer / All presets and per-body visibility |
+| Speed | 1×, 2×, 4×, 10×, 50×, 100×, 500×, 1000×. **1× = 1 simulated day per real second** |
+| Settings → Trails | Show/hide trails, full trajectories, fading, trail length (1, 2, 5, 10, 30, 100, 250 Earth years) |
+| Settings → Bodies | Inner / Outer / Far / All presets and per-body visibility |
 | Settings → Camera | Zoom, Fit, Reset. You can also scroll or pinch to zoom, drag to pan, and double-click to re-centre |
-| Settings → Historical view | Epicycle overlay for one planet or all visible planets |
+| Settings → Historical view | Epicycle overlay for one planet or all visible planets (not Pluto) |
 
 ### Keyboard shortcuts
 
@@ -93,6 +95,7 @@ Tips:
 **This is a deliberately simplified model.**
 
 - **Circular, coplanar orbits.** Each planet moves at a constant speed on a circle in one plane. Real orbits are ellipses (Kepler's first law), are slightly inclined to each other, and planets move faster near the Sun.
+- **Pluto is the exception.** Its orbit is clearly elliptical (e ≈ 0.25; 29.7–49.3 AU), so it is computed from Kepler's equation (Sun at one focus, longitude of perihelion 224.07°) and its path dips inside Neptune's. Its 17° inclination is ignored. Uranus (e ≈ 0.05) and Neptune (e ≈ 0.01) are close to circular and use the circular model.
 - **Real average values.** Orbital radii (in AU) and sidereal periods (in days) are realistic averages:
 
   | Planet | Radius (AU) | Period (days) |
@@ -103,18 +106,23 @@ Tips:
   | Mars | 1.524 | 686.98 |
   | Jupiter | 5.203 | 4332.59 |
   | Saturn | 9.537 | 10759.22 |
+  | Uranus | 19.191 | 30688.5 |
+  | Neptune | 30.069 | 60182 |
+  | Pluto (semi-major axis) | 39.482 | 90560 |
 
 - **Starting phases.** On day 0, planets are placed at their approximate mean longitudes on 1 January 2000. You can change these in `CONFIG.initialLongitudesDeg` at the top of `app.js`. Positions only approximate the real sky, since mean longitudes ignore orbital eccentricity, so this is not an ephemeris.
 - **Uniform scale.** Every distance uses the same scale; no planet's distance is stretched or compressed. Planet markers are drawn much larger than true size so they can be seen.
 - **Positions from absolute time.** Positions are always calculated directly from the simulation time, never by adding up small steps. Changing speed or scrubbing therefore cannot change or break a trajectory.
-- **Moon, dwarf planets and outer planets** beyond Saturn are not included.
+- **The Moon and dwarf planets other than Pluto** are not included.
 
 ### Epicycle overlay
 
 The epicycle overlay is an *interpretation* of the Earth-centred motion, not a separate model. Its circles come from the same orbital data:
 
-- **Mars, Jupiter, Saturn:** deferent = the planet's orbit; epicycle = Earth's orbit (1 AU).
+- **Mars, Jupiter, Saturn, Uranus, Neptune:** deferent = the planet's orbit; epicycle = Earth's orbit (1 AU).
 - **Mercury, Venus:** deferent = the Sun's apparent annual path (1 AU); epicycle = the planet's orbit.
+
+Pluto has no epicycle overlay, because its orbit is not a circle.
 
 In both cases, deferent position + epicycle arm = the planet's Earth-centred position, exactly. Historical models such as Ptolemy's added eccentrics and equants, and their absolute sizes were unknown at the time. Those details are not shown here.
 
@@ -131,7 +139,8 @@ Every reference frame is mathematically valid. That a view looks simple is not, 
 - the Sun traces a 1 AU circle once per year in the Earth-centred frame and never moves retrograde;
 - Mars shows about 7 retrograde loops relative to Earth over 15 years;
 - cached trail samples match the exact positions, and each trail ends exactly at the planet's current position;
-- the deferent + epicycle construction reproduces the Earth-centred positions.
+- the deferent + epicycle construction reproduces the Earth-centred positions;
+- Pluto's orbit has the expected perihelion and aphelion distances, closes after one period and sweeps equal areas in equal times.
 
 The same tests can be run with Node:
 

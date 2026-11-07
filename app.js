@@ -1,5 +1,5 @@
 /*
- * Same Sky, Different Views — planetary motion in different reference frames.
+ * Solar System Sim — planetary motion in different reference frames.
  *
  * Structure
  *   1. Configuration
@@ -25,10 +25,13 @@
       mars: 355.45,
       jupiter: 34.40,
       saturn: 49.94,
+      uranus: 313.23,
+      neptune: 304.88,
+      pluto: 238.93,
     },
-    speeds: [1, 2, 4, 10, 50, 100], // simulated days per real second
+    speeds: [1, 2, 4, 10, 50, 100, 500, 1000], // simulated days per real second
     defaultSpeed: 10,
-    trailYears: [1, 2, 5, 10, 30],
+    trailYears: [1, 2, 5, 10, 30, 100, 250],
     defaultTrailYears: 5,
     stepDays: 10, // step forward / backward buttons
     timelineYears: 30, // initial range of the timeline slider (extends automatically)
@@ -47,6 +50,10 @@
     { id: 'mars', name: 'Mars', a: 1.524, period: 686.98, color: '#ff6b5b', radius: 4.3 },
     { id: 'jupiter', name: 'Jupiter', a: 5.203, period: 4332.59, color: '#f4a259', radius: 7 },
     { id: 'saturn', name: 'Saturn', a: 9.537, period: 10759.22, color: '#c39bff', radius: 6.2, rings: true },
+    { id: 'uranus', name: 'Uranus', a: 19.191, period: 30688.5, color: '#9eeaf2', radius: 5.6 },
+    { id: 'neptune', name: 'Neptune', a: 30.069, period: 60182, color: '#6f7dff', radius: 5.5 },
+    // Pluto is the only body drawn on an ellipse (e ≈ 0.25). varpi = longitude of perihelion (degrees).
+    { id: 'pluto', name: 'Pluto', a: 39.482, period: 90560, color: '#d8b48f', radius: 2.8, e: 0.2488, varpiDeg: 224.07 },
   ];
 
   // ===================================================================
@@ -57,17 +64,42 @@
       idx,
       L0: ((longitudesDeg[d.id] || 0) * Math.PI) / 180,
       n: Number.isFinite(d.period) ? TAU / d.period : 0, // mean motion (rad/day)
+      e: d.e || 0,
+      varpi: ((d.varpiDeg || 0) * Math.PI) / 180,
     }));
     const byId = {};
     bodies.forEach((b) => { byId[b.id] = b; });
 
-    // Heliocentric position from ABSOLUTE time t (days). Circular, coplanar orbit.
+    // Eccentric anomaly E from mean anomaly M (Kepler's equation E - e sin E = M), Newton's method.
+    function solveKepler(M, e) {
+      M = ((M % TAU) + TAU) % TAU;
+      let E = e < 0.8 ? M : Math.PI;
+      for (let i = 0; i < 20; i++) {
+        const d = (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E));
+        E -= d;
+        if (Math.abs(d) < 1e-13) break;
+      }
+      return E;
+    }
+
+    // Heliocentric position from ABSOLUTE time t (days). Coplanar orbits:
+    // circular for e = 0, Keplerian ellipse (Sun at one focus) otherwise.
     function worldPosition(body, t, out) {
       out = out || [0, 0];
       if (body.a === 0) { out[0] = 0; out[1] = 0; return out; }
-      const L = body.L0 + body.n * t;
-      out[0] = body.a * Math.cos(L);
-      out[1] = body.a * Math.sin(L);
+      const L = body.L0 + body.n * t; // mean longitude
+      if (body.e === 0) {
+        out[0] = body.a * Math.cos(L);
+        out[1] = body.a * Math.sin(L);
+        return out;
+      }
+      const e = body.e;
+      const E = solveKepler(L - body.varpi, e);
+      const xp = body.a * (Math.cos(E) - e); // perihelion along +x'
+      const yp = body.a * Math.sqrt(1 - e * e) * Math.sin(E);
+      const c = Math.cos(body.varpi); const s = Math.sin(body.varpi);
+      out[0] = xp * c - yp * s;
+      out[1] = xp * s + yp * c;
       return out;
     }
 
@@ -101,10 +133,11 @@
       c = new Float64Array(CHUNK * 2);
       if (body.a !== 0) {
         const k0 = ci * CHUNK;
+        const p = [0, 0];
         for (let j = 0; j < CHUNK; j++) {
-          const L = body.L0 + body.n * ((k0 + j) * h);
-          c[2 * j] = body.a * Math.cos(L);
-          c[2 * j + 1] = body.a * Math.sin(L);
+          worldPosition(body, (k0 + j) * h, p);
+          c[2 * j] = p[0];
+          c[2 * j + 1] = p[1];
         }
       }
       cache.set(key, c);
@@ -167,6 +200,7 @@
     // ---- Historical interpretation: deferent + epicycle (seen from Earth) ----
     // Derived from the same circular-orbit positions:
     //   centre + arm = relativePosition(planet, Earth, t)  (exactly)
+    // Only defined for circular orbits (Pluto's elliptical orbit is excluded in the UI).
     function epicycle(body, t) {
       const earth = byId.earth;
       if (body.a < earth.a) {
@@ -256,7 +290,7 @@
 
       // 6. Epicycle decomposition reproduces Earth-centred positions exactly.
       let eErr = 0;
-      ['mercury', 'venus', 'mars', 'jupiter', 'saturn'].forEach((id) => {
+      ['mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune'].forEach((id) => {
         const b = byId[id];
         times.forEach((t) => {
           const e = epicycle(b, t);
@@ -267,6 +301,34 @@
         });
       });
       check('Deferent + epicycle reproduce Earth-centred positions', eErr < 1e-9, 'max error ' + eErr);
+
+      // 7. Pluto: elliptical orbit with the Sun at a focus.
+      const pluto = byId.pluto;
+      let rMin = Infinity; let rMax = 0;
+      for (let t = 0; t < pluto.period; t += 5) {
+        const p = worldPosition(pluto, t);
+        const r = Math.hypot(p[0], p[1]);
+        rMin = Math.min(rMin, r); rMax = Math.max(rMax, r);
+      }
+      const q = pluto.a * (1 - pluto.e); const Q = pluto.a * (1 + pluto.e);
+      check('Pluto perihelion / aphelion distances match a(1 ∓ e)',
+        Math.abs(rMin - q) < 0.01 && Math.abs(rMax - Q) < 0.01,
+        'r ' + rMin.toFixed(3) + '–' + rMax.toFixed(3) + ' AU (expected ' + q.toFixed(3) + '–' + Q.toFixed(3) + ')');
+      const pA = worldPosition(pluto, 321.5);
+      const pB = worldPosition(pluto, 321.5 + pluto.period);
+      check('Pluto orbit closes after one period', Math.hypot(pA[0] - pB[0], pA[1] - pB[1]) < 1e-9);
+      // Kepler's second law: equal areas in equal times.
+      const sweep = (t0, dt) => {
+        let area = 0; const steps = 2000; const a = [0, 0]; const b = [0, 0];
+        for (let i = 0; i < steps; i++) {
+          worldPosition(pluto, t0 + (dt * i) / steps, a);
+          worldPosition(pluto, t0 + (dt * (i + 1)) / steps, b);
+          area += (a[0] * b[1] - a[1] * b[0]) / 2;
+        }
+        return area;
+      };
+      const A1 = sweep(0, 3000); const A2 = sweep(40000, 3000);
+      check('Pluto sweeps equal areas in equal times', Math.abs(A1 - A2) / A1 < 1e-4, A1.toFixed(4) + ' vs ' + A2.toFixed(4));
 
       return results;
     }
@@ -289,12 +351,19 @@
   // 3. App
   // ===================================================================
   const $ = (id) => document.getElementById(id);
-  const FRAME_ORDER = ['sun', 'mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn'];
-  const PLANETS_FOR_EPICYCLE = ['mercury', 'venus', 'mars', 'jupiter', 'saturn'];
+  const FRAME_ORDER = ['sun', 'mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'];
+  // Epicycles are only defined for circular orbits, so Pluto is not included.
+  const PLANETS_FOR_EPICYCLE = ['mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune'];
+  const presetOf = (ids) => {
+    const o = {};
+    BODY_DEFS.forEach((d) => { o[d.id] = ids.indexOf(d.id) >= 0; });
+    return o;
+  };
   const PRESETS = {
-    inner: { sun: true, mercury: true, venus: true, earth: true, mars: true, jupiter: false, saturn: false },
-    outer: { sun: true, mercury: false, venus: false, earth: true, mars: false, jupiter: true, saturn: true },
-    all: { sun: true, mercury: true, venus: true, earth: true, mars: true, jupiter: true, saturn: true },
+    inner: presetOf(['sun', 'mercury', 'venus', 'earth', 'mars']),
+    outer: presetOf(['sun', 'earth', 'jupiter', 'saturn']),
+    far: presetOf(['sun', 'earth', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto']),
+    all: presetOf(BODY_DEFS.map((d) => d.id)),
   };
 
   const state = {
@@ -829,8 +898,7 @@
   function setPreset(name) {
     state.preset = name;
     state.visible = Object.assign({}, PRESETS[name]);
-    activeViews().forEach(resetCamera);
-    syncUI();
+    syncUI(); // camera is left as it is
   }
 
   function toggleBody(id) {
@@ -847,10 +915,11 @@
         state.visible[value] = true;
         state.preset = '';
       }
+      // Camera is left as it is, unless the overlay forces a switch to the Earth-centred frame.
       if (!state.compare && state.frame !== 'earth') {
         state.frame = 'earth';
+        resetCamera(views.single);
       }
-      activeViews().forEach(resetCamera);
     }
     syncUI();
   }
@@ -979,7 +1048,8 @@
   buildSegmented(ui.presets, [
     { value: 'inner', html: 'Inner', title: 'Mercury, Venus, Earth, Mars' },
     { value: 'outer', html: 'Outer', title: 'Jupiter and Saturn (with Earth and the Sun)' },
-    { value: 'all', html: 'All', title: 'All planets' },
+    { value: 'far', html: 'Far', title: 'Jupiter, Saturn, Uranus, Neptune and Pluto (with Earth and the Sun)' },
+    { value: 'all', html: 'All', title: 'All bodies' },
   ], setPreset);
 
   model.bodies.forEach((b) => {

@@ -282,3 +282,13 @@ An optional overlay for the Earth-centred view that shows how the same apparent 
   - In both cases `epicycle centre + epicycle arm = relativePosition(planet, Earth, t)` exactly.
 - The overlay must be labelled as a simplified historical interpretation (no eccentric, no equant, and absolute distances were unknown historically).
 - Selecting the overlay switches to the Earth-centred frame. Selecting another frame turns it off.
+
+### 14.4 Outer planets, Pluto and camera behaviour
+
+- Uranus, Neptune and the dwarf planet Pluto are added. They are hidden by default, and can be selected as reference frames.
+- Uranus and Neptune use the circular model. Pluto's orbit is clearly elliptical (e ≈ 0.25), so it is computed as a coplanar Keplerian ellipse (Sun at one focus). Its inclination is ignored.
+- The epicycle overlay is available for Uranus and Neptune, but not for Pluto.
+- Presets: Inner, Outer (Jupiter, Saturn), Far (Jupiter, Saturn, Uranus, Neptune, Pluto), All (every body). Outer and Far also show the Sun and Earth.
+- Speed options add 500x and 1000x. Trail duration options add 100 and 250 Earth years.
+- Changing the body preset or the epicycle overlay does not change the camera zoom. The camera resets only if the overlay forces a switch to the Earth-centred frame.
+- The page title is "Solar System Sim".

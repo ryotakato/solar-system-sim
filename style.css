@@ -50,7 +50,6 @@ button { cursor: pointer; }
 
 .brand { display: flex; flex-direction: column; min-width: 0; }
 .brand-title { font-weight: 700; font-size: 18px; letter-spacing: 0.02em; }
-.brand-sub { font-size: 12.5px; color: var(--muted); }
 
 .frame-block { display: flex; align-items: center; gap: 10px; margin: 0 auto; flex-wrap: wrap; justify-content: center; }
 .frame-caption { color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; }
@@ -353,8 +352,7 @@ body.presenting.reveal-right #panel { transform: none; opacity: 1; }
 body.presenting #view-labels,
 body.presenting #model-badge,
 body.presenting #epicycle-caption,
-body.presenting #btn-panel,
-body.presenting .brand-sub { display: none; }
+body.presenting #btn-panel { display: none; }
 body.presenting.show-text #view-labels,
 body.presenting.show-text #model-badge { display: block; }
 body.presenting.show-text #epicycle-caption:not([hidden]) { display: block; }
@@ -369,7 +367,6 @@ body.presenting .view-sub { font-size: 14px; }
 /* ---------- Narrow screens ---------- */
 @media (max-width: 900px) {
   #panel { position: absolute; top: 0; right: 0; bottom: 0; box-shadow: -12px 0 30px rgba(0, 0, 0, 0.5); }
-  .brand-sub { display: none; }
   .frame-block { margin: 0; }
   .speed { align-items: flex-start; }
 }
