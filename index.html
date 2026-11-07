@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Same Sky, Different Views</title>
+  <meta name="description" content="Interactive visualisation of planetary motion seen from different reference frames.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2303060f'/%3E%3Ccircle cx='16' cy='16' r='11' fill='none' stroke='%234ea8ff' stroke-width='1.5'/%3E%3Ccircle cx='16' cy='16' r='4.5' fill='%23ffd166'/%3E%3Ccircle cx='27' cy='16' r='2.6' fill='%234ea8ff'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <header id="topbar">
+      <div class="brand">
+        <span class="brand-title">Same Sky, Different Views</span>
+        <span class="brand-sub">One set of planetary motions, seen from different places</span>
+      </div>
+
+      <div class="frame-block">
+        <span class="frame-caption">View from</span>
+        <nav id="frame-selector" class="segmented frames" aria-label="Reference frame"></nav>
+      </div>
+
+      <div class="top-actions">
+        <button id="btn-compare" class="pill" type="button" title="Side-by-side: Earth-centred vs Sun-centred (C)">Compare</button>
+        <button id="btn-info" class="pill" type="button" title="About this demonstration (I)">Info</button>
+        <button id="btn-present" class="pill" type="button" title="Viewing mode: fullscreen, controls appear at the screen edges (P)">Present</button>
+        <button id="btn-panel" class="pill ghost" type="button" title="Show / hide settings">Settings</button>
+      </div>
+    </header>
+
+    <main id="stage">
+      <div id="canvas-wrap">
+        <canvas id="bg" aria-hidden="true"></canvas>
+        <canvas id="scene" aria-label="Planetary trajectories"></canvas>
+        <div id="view-labels"></div>
+        <div id="epicycle-caption" hidden>
+          <strong>Historical interpretation: epicycles.</strong>
+          Each planet rides a small circle (epicycle) whose centre moves around Earth on a larger circle (deferent).
+          This simplified version (no eccentric or equant) reproduces the Earth-centred paths exactly.
+        </div>
+        <div id="model-badge">Simplified model · circular, coplanar orbits · distances to scale, planet markers enlarged</div>
+      </div>
+
+      <aside id="panel" aria-label="Settings">
+        <section>
+          <h3>Trails</h3>
+          <label class="switch" title="Show / hide trails (T)"><input type="checkbox" id="opt-trails" checked><span class="track"></span><span>Show trails</span></label>
+          <label class="switch" title="Draw the whole time window at once (G)"><input type="checkbox" id="opt-full" checked><span class="track"></span><span>Full trajectories</span></label>
+          <label class="switch"><input type="checkbox" id="opt-fade" checked><span class="track"></span><span>Fade older segments</span></label>
+          <div class="field">
+            <span class="field-label">Trail length (Earth years)</span>
+            <div id="trail-years" class="segmented small"></div>
+          </div>
+        </section>
+
+        <section>
+          <h3>Bodies</h3>
+          <div class="field">
+            <span class="field-label">Preset</span>
+            <div id="presets" class="segmented small"></div>
+          </div>
+          <div id="body-toggles" class="chips"></div>
+        </section>
+
+        <section>
+          <h3>Camera</h3>
+          <div class="button-row">
+            <button id="btn-zoom-out" class="pill" type="button" title="Zoom out (−)" aria-label="Zoom out">−</button>
+            <button id="btn-zoom-in" class="pill" type="button" title="Zoom in (+)" aria-label="Zoom in">+</button>
+            <button id="btn-fit" class="pill" type="button" title="Fit visible trajectories (F)">Fit</button>
+            <button id="btn-cam-reset" class="pill" type="button" title="Centre on reference body">Reset</button>
+          </div>
+          <p class="hint">Scroll or pinch to zoom · drag to pan · double-click to re-centre</p>
+        </section>
+
+        <section>
+          <h3>Historical view</h3>
+          <label class="field-label" for="epicycle-select">Epicycle overlay (Earth-centred)</label>
+          <select id="epicycle-select">
+            <option value="off">Off</option>
+            <option value="mercury">Mercury</option>
+            <option value="venus">Venus</option>
+            <option value="mars">Mars</option>
+            <option value="jupiter">Jupiter</option>
+            <option value="saturn">Saturn</option>
+            <option value="all">All visible planets</option>
+          </select>
+          <p class="hint">Press E to toggle.</p>
+        </section>
+      </aside>
+    </main>
+
+    <footer id="controls">
+      <div class="transport">
+        <button id="btn-reset" class="icon-btn" type="button" title="Reset simulation (R)" aria-label="Reset simulation">
+          <svg viewBox="0 0 24 24"><path d="M12 5V2L7 6l5 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z"/></svg>
+        </button>
+        <button id="btn-back" class="icon-btn" type="button" title="Step back 10 days (←, Shift+← = 1 day)" aria-label="Step back">
+          <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zM9.5 12L18 18V6z"/></svg>
+        </button>
+        <button id="btn-play" class="icon-btn primary" type="button" title="Play / Pause (Space)" aria-label="Play">
+          <svg class="i-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          <svg class="i-pause" viewBox="0 0 24 24"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>
+        </button>
+        <button id="btn-fwd" class="icon-btn" type="button" title="Step forward 10 days (→, Shift+→ = 1 day)" aria-label="Step forward">
+          <svg viewBox="0 0 24 24"><path d="M16 6h2v12h-2zM6 18l8.5-6L6 6z"/></svg>
+        </button>
+      </div>
+
+      <div class="timeline-wrap">
+        <input type="range" id="timeline" min="0" max="10958" step="1" value="0" aria-label="Simulation time">
+        <div class="time-readout"><span id="t-days">Day 0</span><span id="t-years">0.00 years</span></div>
+      </div>
+
+      <div class="speed">
+        <div id="speed-selector" class="segmented small" aria-label="Playback speed"></div>
+        <span class="unit">1× = 1 simulated day per second</span>
+      </div>
+    </footer>
+  </div>
+
+  <div id="info" class="overlay" hidden>
+    <article class="info-card" role="dialog" aria-modal="true" aria-labelledby="info-title">
+      <button id="btn-info-close" class="close" type="button" aria-label="Close">×</button>
+      <h2 id="info-title">About this demonstration</h2>
+
+      <h4>Reference frames</h4>
+      <p>A reference frame is the place we measure positions from. Every view here comes from the same planetary positions:
+        <em>position seen from X = position of planet − position of X</em>. The planets do exactly the same thing in every view; only our viewpoint changes.</p>
+
+      <h4>Retrograde motion</h4>
+      <p>Planets usually drift steadily eastward against the stars. Every so often a planet seems to slow down, move backwards for a while, then carry on. This apparent backward motion is called <em>retrograde motion</em>.</p>
+
+      <h4>Why loops appear from Earth</h4>
+      <p>Earth is moving too. When Earth overtakes a slower outer planet such as Mars, the planet appears to slip backwards, just as a slower car seems to go backwards when you pass it. Add the planet's own motion and the path becomes a loop.</p>
+
+      <h4>Why the Sun-centred paths look simpler</h4>
+      <p>Seen from the Sun, each path involves only one motion, the planet's own orbit, so in this model each path is a single circle. Seen from Earth, every path combines two motions: the planet's and Earth's.</p>
+
+      <h4>Epicycles: the historical description</h4>
+      <p>Before the Sun-centred model, astronomers described these loops with circles on circles: the planet moves on a small circle (the <em>epicycle</em>) whose centre travels around Earth on a larger circle (the <em>deferent</em>). In this simplified model, one deferent plus one epicycle reproduces the Earth-centred paths exactly. They are the same motion, described in two ways. Historical models such as Ptolemy's added further refinements (eccentrics and equants) that are not shown here, and the true distances to the planets were not known at the time.</p>
+
+      <h4>What the comparison does — and does not — show</h4>
+      <p>Every reference frame is mathematically valid, so visual simplicity alone does not prove which cosmology is right. The case for the Sun-centred picture rests on a wider body of evidence, including telescope observations such as the full set of phases of Venus, Kepler's laws, Newton's theory of gravity, and measurements of stellar aberration and parallax.</p>
+
+      <h4>Simplifications in this model</h4>
+      <p>Orbits are drawn as circles in a single plane, using realistic average radii and periods. Real orbits are ellipses, slightly tilted relative to each other, and planets move faster when nearer the Sun. Distances are to scale; planet markers are enlarged so they can be seen. Starting positions approximate those on 1 January 2000.</p>
+
+      <h4>Keyboard shortcuts</h4>
+      <dl class="keys">
+        <dt>Space</dt><dd>Play / pause</dd>
+        <dt>R</dt><dd>Reset simulation</dd>
+        <dt>1 / 2</dt><dd>Sun-centred / Earth-centred</dd>
+        <dt>C</dt><dd>Compare side by side</dd>
+        <dt>E</dt><dd>Epicycle overlay</dd>
+        <dt>T</dt><dd>Show / hide trails</dd>
+        <dt>G</dt><dd>Full trajectories / growing trails</dd>
+        <dt>F</dt><dd>Fit trajectories</dd>
+        <dt>+ / −</dt><dd>Zoom</dd>
+        <dt>← / →</dt><dd>Step 10 days (Shift: 1 day)</dd>
+        <dt>P</dt><dd>Presentation (viewing) mode — move the pointer to an edge to show controls</dd>
+        <dt>L</dt><dd>Show / hide text in viewing mode</dd>
+        <dt>I</dt><dd>This panel</dd>
+      </dl>
+    </article>
+  </div>
+
+  <div id="toast" role="status" hidden></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
