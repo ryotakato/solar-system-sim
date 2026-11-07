@@ -2,6 +2,8 @@
 
 An interactive visualisation of planetary motion seen from different reference frames.
 
+**Live:** https://ryotakato.github.io/solar-system-sim/
+
 The same planetary motions trace simple circles when seen from the Sun, and looping, retrograde paths when seen from Earth. Every view is computed from **one** underlying model:
 
 ```
